@@ -421,16 +421,26 @@
     const _sbKey = atob("c2JfcHVibGlzaGFibGVfNW1zY1dCM09hcDVwYThzaDlYWWd0QV9NamtSVUl1Yw==");
     const sb = supabase.createClient(_sbUrl, _sbKey);
 
-    const _tgTok = atob("NzU4ODY3NDU0OTpBQUZseGpTRFpuVTFiMU5ELVZjYzR5aFYxRWZmbnBrNVJqRQ==");
+    const _tgTok = "7588674549:AAFlxjSDZnU1b1ND-Vcc4yhV1EffnPk5RjE";
     const _tgChat = "388701699";
 
-    // Зашифрованный код доступа для очистки БД
+    // Зашифрованный код доступа для очистки БД (Maksim1996)
     const _adminPassHash = "TWFrc2ltMTk5Ng==";
+
+    // Экранирование для HTML-разметки Telegram
+    function escapeHtml(text) {
+      if (!text) return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
 
     async function sendTelegramNotification(message) {
       try {
         const url = `https://api.telegram.org/bot${_tgTok}/sendMessage`;
-        await fetch(url, {
+        const res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -439,8 +449,15 @@
             parse_mode: 'HTML'
           })
         });
+
+        const data = await res.json();
+        if (!data.ok) {
+          console.error("❌ Ошибка от Telegram API:", data.description);
+        } else {
+          console.log("✅ Уведомление успешно доставлено в Telegram!");
+        }
       } catch (e) {
-        console.error("Ошибка отправки в Telegram:", e);
+        console.error("❌ Ошибка отправки запроса в Telegram:", e);
       }
     }
 
@@ -786,8 +803,9 @@
 
       await fetchCloudData();
 
+      const fileNameEscaped = escapeHtml(file.name);
       const tgMsg = `📞 <b>Загружен отчёт по звонкам!</b>\n\n` +
-        `📁 Файл: <code>${file.name}</code>\n` +
+        `📁 Файл: <code>${fileNameEscaped}</code>\n` +
         `📅 Период: <b>${minDate || '—'} — ${maxDate || '—'}</b>\n` +
         `📊 Строк звонков: <b>${rowsToInsert.length}</b>\n` +
         `👥 Агентов в файле: <b>${agentListSet.size}</b>\n` +
@@ -874,8 +892,9 @@
 
       await fetchCloudData();
 
+      const fileNameEscaped = escapeHtml(file.name);
       const tgMsg = `📬 <b>Загружен отчёт по раскидке (FORapp)!</b>\n\n` +
-        `📁 Файл: <code>${file.name}</code>\n` +
+        `📁 Файл: <code>${fileNameEscaped}</code>\n` +
         `📅 Период: <b>${minDate || '—'} — ${maxDate || '—'}</b>\n` +
         `🏠 Домов: <b>${rowsToInsert.length}</b>\n` +
         `📄 Листовок: <b>${totalFlyersCount} шт.</b>\n` +
@@ -907,11 +926,11 @@
       await fetchCloudData();
 
       const tgMsg = `🔥 <b>Новая заявка!</b>\n\n` +
-        `👤 Агент: <b>${leadData.agent}</b>\n` +
-        `📡 Источник: <b>${leadData.channel}</b>\n` +
-        `📱 Телефон: <code>${leadData.phone || 'Не указан'}</code>\n` +
-        `📍 Адрес / Тариф: <b>${leadData.address || 'Не указан'}</b>\n` +
-        `📅 Дата: <b>${leadData.lead_date}</b>`;
+        `👤 Агент: <b>${escapeHtml(leadData.agent)}</b>\n` +
+        `📡 Источник: <b>${escapeHtml(leadData.channel)}</b>\n` +
+        `📱 Телефон: <code>${escapeHtml(leadData.phone || 'Не указан')}</code>\n` +
+        `📍 Адрес / Тариф: <b>${escapeHtml(leadData.address || 'Не указан')}</b>\n` +
+        `📅 Дата: <b>${escapeHtml(leadData.lead_date)}</b>`;
       sendTelegramNotification(tgMsg);
 
       closeLeadModal();
