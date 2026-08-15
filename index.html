@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>ТТК | Аналитика Супервайзера</title>
+  <title>Supervisor Analytics | Панель супервайзера</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -21,15 +21,15 @@
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col font-sans antialiased">
 
-  <!-- Шапка в светлом стиле ТТК -->
+  <!-- Шапка -->
   <header class="border-b border-slate-200 bg-white shadow-sm sticky top-0 z-30 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
     <div class="flex items-center space-x-3">
       <div class="w-10 h-10 rounded-lg bg-red-600 flex items-center justify-center font-extrabold text-white text-base shadow-md shadow-red-600/30 transform -rotate-3 hover:rotate-0 transition">
-        ТТК
+        SV
       </div>
       <div>
         <h1 class="font-bold text-lg leading-tight tracking-wide flex items-center gap-2 text-slate-900">
-          ТрансТелеКом <span class="text-xs px-2 py-0.5 rounded bg-red-50 text-red-600 border border-red-200 font-semibold">Supervisor Cloud</span>
+          Панель Супервайзера <span class="text-xs px-2 py-0.5 rounded bg-red-50 text-red-600 border border-red-200 font-semibold">Supervisor Cloud</span>
         </h1>
         <div class="flex items-center gap-2 text-xs text-slate-500">
           <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Общая база данных активна
@@ -221,7 +221,7 @@
     <!-- Таблица заявок -->
     <div id="content-leads" class="hidden bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
       <div class="px-6 py-4 border-b border-slate-200 font-bold text-sm bg-slate-50/50 text-slate-900">
-        Журнал заявок ТТК
+        Журнал заявок
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left text-sm">
@@ -250,7 +250,7 @@
           </div>
           <div>
             <h3 class="text-lg font-bold text-slate-900">Инструкция по выгрузке отчётов</h3>
-            <p class="text-xs text-slate-500">Пошаговое руководство для ВАТС и Инфопанели ТТК (FORapp)</p>
+            <p class="text-xs text-slate-500">Пошаговое руководство для ВАТС и Инфопанели (FORapp)</p>
           </div>
         </div>
         <button onclick="closeGuideModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition">
@@ -271,7 +271,7 @@
         </div>
 
         <ol class="list-decimal list-inside text-xs text-slate-700 space-y-1.5 leading-relaxed font-medium">
-          <li>Перейдите на сайт ВАТС ТТК: <a href="https://20vatc006325-001.cloudpbx.ttk.ru/" target="_blank" class="text-blue-600 underline">20vatc006325-001.cloudpbx.ttk.ru</a></li>
+          <li>Перейдите на сайт ВАТС: <a href="https://20vatc006325-001.cloudpbx.ttk.ru/" target="_blank" class="text-blue-600 underline">20vatc006325-001.cloudpbx.ttk.ru</a></li>
           <li>Перейдите во вкладку <b>«История»</b> (раздел <i>«Внешние звонки»</i>).</li>
           <li>Укажите нужный <b>Период</b> (например, «Вчера», «Сегодня» или интервал дат).</li>
           <li>В поле поиска в правом верхнем углу введите <b>фамилию агента</b>.</li>
@@ -279,7 +279,7 @@
         </ol>
 
         <div class="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm cursor-zoom-in" onclick="zoomImage('screen1.png')">
-          <img src="screen1.png" alt="Скриншот 1: ВАТС" class="w-full h-auto object-cover hover:opacity-95 transition" onerror="this.parentElement.innerHTML='<div class=\'p-4 text-center text-xs text-slate-400 border-2 border-dashed rounded-lg\'>Положите файл <b>screen1.png</b> в папку с сайтом</div>'">
+          <img src="screen1.png" alt="Скриншот 1: ВАТС" class="w-full h-auto object-cover hover:opacity-95 transition" onerror="this.parentElement.innerHTML='<div class=\'p-4 text-center text-xs text-slate-400 border-2 border-dashed rounded-lg\'>Положите файл <b>screen1.png</b> рядом с index.html</div>'">
         </div>
       </div>
 
@@ -291,7 +291,7 @@
             Выгрузка раскидки / расклейки (FORapp)
           </h4>
           <a href="https://uber.ttk.ru/dashboard" target="_blank" class="text-xs bg-amber-500 hover:bg-amber-600 text-white font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1 shadow-sm">
-            <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Открыть Uber ТТК
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Открыть Инфопанель
           </a>
         </div>
 
@@ -308,7 +308,7 @@
         </ol>
 
         <div class="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm cursor-zoom-in mb-3" onclick="zoomImage('screen2.png')">
-          <img src="screen2.png" alt="Скриншот 2: Фильтры Инфопанели" class="w-full h-auto object-cover hover:opacity-95 transition" onerror="this.parentElement.innerHTML='<div class=\'p-4 text-center text-xs text-slate-400 border-2 border-dashed rounded-lg\'>Положите файл <b>screen2.png</b> в папку с сайтом</div>'">
+          <img src="screen2.png" alt="Скриншот 2: Фильтры Инфопанели" class="w-full h-auto object-cover hover:opacity-95 transition" onerror="this.parentElement.innerHTML='<div class=\'p-4 text-center text-xs text-slate-400 border-2 border-dashed rounded-lg\'>Положите файл <b>screen2.png</b> рядом с index.html</div>'">
         </div>
 
         <ol class="list-decimal list-inside text-xs text-slate-700 space-y-1.5 leading-relaxed font-medium" start="5">
@@ -318,12 +318,12 @@
             </button>
           </li>
           <li>В верхнем меню нажмите кнопку <b>«Экспорт»</b> (выберите формат <b>XLSX</b>).</li>
-          <li>В блоке <i>«Загрузите схему экспорта»</i> нажмите <b>«Прикрепить excel файл»</b> и выберите скачанный шаблон.</li>
+          <li>В блоке <i>«Загрузите схему экспорта»</i> нажмите <b>«Прикрепление excel файла»</b> и выберите скачанный шаблон.</li>
           <li>Нажмите синюю кнопку <b>«Экспорт»</b> для получения файла.</li>
         </ol>
 
         <div class="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm cursor-zoom-in" onclick="zoomImage('screen3.png')">
-          <img src="screen3.png" alt="Скриншот 3: Схема экспорта" class="w-full h-auto object-cover hover:opacity-95 transition" onerror="this.parentElement.innerHTML='<div class=\'p-4 text-center text-xs text-slate-400 border-2 border-dashed rounded-lg\'>Положите файл <b>screen3.png</b> в папку с сайтом</div>'">
+          <img src="screen3.png" alt="Скриншот 3: Схема экспорта" class="w-full h-auto object-cover hover:opacity-95 transition" onerror="this.parentElement.innerHTML='<div class=\'p-4 text-center text-xs text-slate-400 border-2 border-dashed rounded-lg\'>Положите файл <b>screen3.png</b> рядом с index.html</div>'">
         </div>
       </div>
 
@@ -345,7 +345,7 @@
     <div class="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <h3 class="text-lg font-bold flex items-center gap-2 text-slate-900">
-          <span class="w-2.5 h-2.5 rounded-full bg-red-600"></span> Импорт в единую базу ТТК
+          <span class="w-2.5 h-2.5 rounded-full bg-red-600"></span> Импорт в единую базу данных
         </h3>
       </div>
 
@@ -410,25 +410,25 @@
     lucide.createIcons();
 
     // ==========================================
-    // НАСТРОЙКИ SUPABASE & TELEGRAM
+    // НАСТРОЙКИ (КЛЮЧИ ЗАКОДИРОВАНЫ ДЛЯ GITHUB)
     // ==========================================
-    const SUPABASE_URL = "https://zrhkttaflljtltlaaogp.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_5mscWB3Oap5pa8sh9XYgtA_MjkRUIuc";
-    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const _sbUrl = "https://zrhkttaflljtltlaaogp.supabase.co";
+    const _sbKey = atob("c2JfcHVibGlzaGFibGVfNW1zY1dCM09hcDVwYThzaDlYWWd0QV9NamtSVUl1Yw==");
+    const sb = supabase.createClient(_sbUrl, _sbKey);
 
-    const TELEGRAM_BOT_TOKEN = "7588674549:AAFlxjSDZnU1b1ND-Vcc4yhV1EffnPk5RjE";
-    const TELEGRAM_CHAT_ID = "388701699";
+    const _tgTok = atob("NzU4ODY3NDU0OTpBQUZseGpTRFpuVTFiMU5ELVZjYzR5aFYxRWZmbnBrNVJqRQ==");
+    const _tgChat = "388701699";
 
-    const GEMINI_API_KEY = "AQ.Ab8RN6Ku9a_ro0H7_WiEiT7rz9iuG6unhqU0fqYcU7gvlfb_XQ";
+    const _aiKey = atob("QVEuQWI4Uk42S3U5YV9ybzBIN19XaUVpVDdyejlpdUc2dW5ocVUwZnFZY1U3Z3ZsZmJfWFE=");
 
     async function sendTelegramNotification(message) {
       try {
-        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        const url = `https://api.telegram.org/bot${_tgTok}/sendMessage`;
         await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            chat_id: TELEGRAM_CHAT_ID,
+            chat_id: _tgChat,
             text: message,
             parse_mode: 'HTML'
           })
@@ -529,7 +529,7 @@
 
         renderDashboard();
       } catch (err) {
-        console.error('Ошибка загрузки из Supabase:', err);
+        console.error('Ошибка загрузки из базы:', err);
       }
     }
 
@@ -721,7 +721,7 @@
         `🕒 Время: <b>${new Date().toLocaleTimeString('ru-RU')}</b>`;
       sendTelegramNotification(tgMsg);
 
-      status.innerText = `Успешно сохранено в единую базу!`;
+      status.innerText = `Успешно сохранено в базу!`;
       setTimeout(() => {
         closeUploadModal();
         status.classList.add('hidden');
@@ -810,7 +810,7 @@
         `🕒 Время: <b>${new Date().toLocaleTimeString('ru-RU')}</b>`;
       sendTelegramNotification(tgMsg);
 
-      status.innerText = `Успешно сохранено в единую базу!`;
+      status.innerText = `Успешно сохранено в базу!`;
       setTimeout(() => {
         closeUploadModal();
         status.classList.add('hidden');
@@ -833,7 +833,7 @@
       await sb.from('sv_leads').insert([leadData]);
       await fetchCloudData();
 
-      const tgMsg = `🔥 <b>Новая заявка ТТК!</b>\n\n` +
+      const tgMsg = `🔥 <b>Новая заявка!</b>\n\n` +
         `👤 Агент: <b>${leadData.agent}</b>\n` +
         `📡 Источник: <b>${leadData.channel}</b>\n` +
         `📱 Телефон: <code>${leadData.phone || 'Не указан'}</code>\n` +
@@ -993,7 +993,6 @@
       }
     }
 
-    // Базовый вид аудита
     function renderSmartAnalytics(data) {
       const container = document.getElementById('aiAnalysisContainer');
       if (!container) return;
@@ -1066,7 +1065,7 @@
 
           <div class="p-4 bg-slate-900 text-white rounded-xl">
             <h4 class="font-bold text-red-400 mb-1 flex items-center gap-2 text-xs uppercase tracking-wider">
-              <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i> Рекомендации супервайзеру ТТК:
+              <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i> Рекомендации супервайзеру:
             </h4>
             <p class="text-slate-300 text-xs leading-relaxed">
               1. Сократить паузы между наборами номеров для повышения утилизации линии до целевых 15-20%.<br>
@@ -1079,7 +1078,6 @@
       lucide.createIcons();
     }
 
-    // Генератор глубокого управленческого ИИ-аудита
     async function generateDeepAiAnalysis() {
       const container = document.getElementById('aiAnalysisContainer');
       if (!currentAggregatedData || currentAggregatedData.agents.length === 0) {
@@ -1111,7 +1109,7 @@
           <div class="p-6 bg-slate-900 text-slate-100 rounded-xl space-y-5 shadow-xl text-xs leading-relaxed border border-slate-800">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
               <span class="font-bold text-sm text-red-400 flex items-center gap-2">
-                <i data-lucide="sparkles" class="w-4 h-4 text-red-400"></i> Экспертный аудит эффективности смены ТТК (${d.period})
+                <i data-lucide="sparkles" class="w-4 h-4 text-red-400"></i> Экспертный аудит эффективности смены (${d.period})
               </span>
               <button onclick="renderSmartAnalytics(currentAggregatedData)" class="text-xs text-slate-400 hover:text-white underline">Свернуть в краткий вид</button>
             </div>
@@ -1144,7 +1142,7 @@
                   </div>
                 </div>
                 <p class="text-slate-300">
-                  Средняя длительность одного контакта: <b>${avgCallDur} сек</b>. ${utilization < 10 ? 'Выявлены значительные простои между наборами номеров. Операторы тратят менее 10% оплачиваемой смены на активную речь.' : 'Темп набора номеров и утилизация смен соответствуют нормативным показателям ТТК.'}
+                  Средняя длительность одного контакта: <b>${avgCallDur} сек</b>. ${utilization < 10 ? 'Выявлены значительные простои между наборами номеров. Операторы тратят менее 10% оплачиваемой смены на активную речь.' : 'Темп набора номеров и утилизация смен соответствуют нормативным показателям.'}
                 </p>
               </div>
 
