@@ -278,8 +278,8 @@
           <li>Нажмите на иконку <b>«XLS»</b> в правом верхнем углу для выгрузки отчёта.</li>
         </ol>
 
-        <div class="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm cursor-zoom-in" onclick="zoomImage('screen1.png')">
-          <img src="screen1.png" alt="Скриншот 1: ВАТС" class="w-full h-auto object-cover hover:opacity-95 transition" onerror="this.parentElement.innerHTML='<div class=\'p-4 text-center text-xs text-slate-400 border-2 border-dashed rounded-lg\'>Положите файл <b>screen1.png</b> рядом с index.html</div>'">
+        <div class="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm cursor-zoom-in" onclick="zoomImage('screen1.png?v=2')">
+          <img src="screen1.png?v=2" alt="Скриншот 1: ВАТС" class="w-full h-auto object-cover hover:opacity-95 transition" onerror="this.parentElement.innerHTML='<div class=\'p-4 text-center text-xs text-slate-400 border-2 border-dashed rounded-lg\'>Положите файл <b>screen1.png</b> рядом с index.html</div>'">
         </div>
       </div>
 
@@ -307,8 +307,8 @@
           <li>Нажмите синюю кнопку <b>«Применить»</b>.</li>
         </ol>
 
-        <div class="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm cursor-zoom-in mb-3" onclick="zoomImage('screen2.png')">
-          <img src="screen2.png" alt="Скриншот 2: Фильтры Инфопанели" class="w-full h-auto object-cover hover:opacity-95 transition" onerror="this.parentElement.innerHTML='<div class=\'p-4 text-center text-xs text-slate-400 border-2 border-dashed rounded-lg\'>Положите файл <b>screen2.png</b> рядом с index.html</div>'">
+        <div class="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm cursor-zoom-in mb-3" onclick="zoomImage('screen2.png?v=2')">
+          <img src="screen2.png?v=2" alt="Скриншот 2: Фильтры Инфопанели" class="w-full h-auto object-cover hover:opacity-95 transition" onerror="this.parentElement.innerHTML='<div class=\'p-4 text-center text-xs text-slate-400 border-2 border-dashed rounded-lg\'>Положите файл <b>screen2.png</b> рядом с index.html</div>'">
         </div>
 
         <ol class="list-decimal list-inside text-xs text-slate-700 space-y-1.5 leading-relaxed font-medium" start="5">
@@ -318,12 +318,12 @@
             </button>
           </li>
           <li>В верхнем меню нажмите кнопку <b>«Экспорт»</b> (выберите формат <b>XLSX</b>).</li>
-          <li>В блоке <i>«Загрузите схему экспорта»</i> нажмите <b>«Прикрепление excel файла»</b> и выберите скачанный шаблон.</li>
+          <li>В блоке <i>«Загрузите схему экспорта»</i> нажмите <b>«Прикрепить excel файл»</b> и выберите скачанный шаблон.</li>
           <li>Нажмите синюю кнопку <b>«Экспорт»</b> для получения файла.</li>
         </ol>
 
-        <div class="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm cursor-zoom-in" onclick="zoomImage('screen3.png')">
-          <img src="screen3.png" alt="Скриншот 3: Схема экспорта" class="w-full h-auto object-cover hover:opacity-95 transition" onerror="this.parentElement.innerHTML='<div class=\'p-4 text-center text-xs text-slate-400 border-2 border-dashed rounded-lg\'>Положите файл <b>screen3.png</b> рядом с index.html</div>'">
+        <div class="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm cursor-zoom-in" onclick="zoomImage('screen3.png?v=2')">
+          <img src="screen3.png?v=2" alt="Скриншот 3: Схема экспорта" class="w-full h-auto object-cover hover:opacity-95 transition" onerror="this.parentElement.innerHTML='<div class=\'p-4 text-center text-xs text-slate-400 border-2 border-dashed rounded-lg\'>Положите файл <b>screen3.png</b> рядом с index.html</div>'">
         </div>
       </div>
 
@@ -419,8 +419,6 @@
     const _tgTok = atob("NzU4ODY3NDU0OTpBQUZseGpTRFpuVTFiMU5ELVZjYzR5aFYxRWZmbnBrNVJqRQ==");
     const _tgChat = "388701699";
 
-    const _aiKey = atob("QVEuQWI4Uk42S3U5YV9ybzBIN19XaUVpVDdyejlpdUc2dW5ocVUwZnFZY1U3Z3ZsZmJfWFE=");
-
     async function sendTelegramNotification(message) {
       try {
         const url = `https://api.telegram.org/bot${_tgTok}/sendMessage`;
@@ -488,16 +486,50 @@
       renderDashboard();
     }
 
+    // Загрузка ВСЕХ данных порциями по 1000 строк (обход лимита Supabase)
+    async function fetchAllFromTable(tableName) {
+      let allRows = [];
+      let page = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
+        const { data, error } = await sb
+          .from(tableName)
+          .select('*')
+          .range(from, to);
+
+        if (error) {
+          console.error(`Ошибка загрузки ${tableName}:`, error);
+          break;
+        }
+
+        if (data && data.length > 0) {
+          allRows = allRows.concat(data);
+          if (data.length < pageSize) {
+            hasMore = false;
+          } else {
+            page++;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
+      return allRows;
+    }
+
     async function fetchCloudData() {
       try {
-        const [callsRes, flyersRes, leadsRes] = await Promise.all([
-          sb.from('sv_calls').select('*'),
-          sb.from('sv_flyers').select('*'),
-          sb.from('sv_leads').select('*')
+        const [callsData, flyersData, leadsData] = await Promise.all([
+          fetchAllFromTable('sv_calls'),
+          fetchAllFromTable('sv_flyers'),
+          fetchAllFromTable('sv_leads')
         ]);
 
-        if (callsRes.data) {
-          db.calls = callsRes.data.map(c => ({
+        if (callsData) {
+          db.calls = callsData.map(c => ({
             agent: c.agent,
             date: c.call_date,
             time: c.call_time,
@@ -505,8 +537,8 @@
           }));
         }
 
-        if (flyersRes.data) {
-          db.flyers = flyersRes.data.map(f => ({
+        if (flyersData) {
+          db.flyers = flyersData.map(f => ({
             agent: f.agent,
             date: f.action_date,
             address: f.address,
@@ -517,8 +549,8 @@
           }));
         }
 
-        if (leadsRes.data) {
-          db.leads = leadsRes.data.map(l => ({
+        if (leadsData) {
+          db.leads = leadsData.map(l => ({
             agent: l.agent,
             channel: l.channel,
             phone: l.phone,
@@ -607,7 +639,6 @@
     }
     function closeLeadModal() { document.getElementById('leadModal').classList.add('hidden'); }
 
-    // Управление модалками инструкции и зума картинок
     function openGuideModal() { document.getElementById('guideModal').classList.remove('hidden'); }
     function closeGuideModal() { document.getElementById('guideModal').classList.add('hidden'); }
     function zoomImage(src) {
@@ -704,7 +735,7 @@
         }
       }
 
-      status.innerText = `Сохранение ${rowsToInsert.length} звонков в облако...`;
+      status.innerText = `Сохранение ${rowsToInsert.length} звонков в базу...`;
 
       for (let i = 0; i < rowsToInsert.length; i += 500) {
         const batch = rowsToInsert.slice(i, i + 500);
@@ -792,7 +823,7 @@
         }
       }
 
-      status.innerText = `Сохранение ${rowsToInsert.length} адресов в облако...`;
+      status.innerText = `Сохранение ${rowsToInsert.length} адресов в базу...`;
 
       for (let i = 0; i < rowsToInsert.length; i += 300) {
         const batch = rowsToInsert.slice(i, i + 300);
