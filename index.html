@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>ТТК | Аналитика Супервайзера</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    .btn-period-active {
+      background-color: #e21a1a !important;
+      color: #ffffff !important;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(226, 26, 26, 0.3);
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col font-sans antialiased">
+
+  <!-- Шапка в светлом стиле ТТК -->
+  <header class="border-b border-slate-200 bg-white shadow-sm sticky top-0 z-30 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-lg bg-red-600 flex items-center justify-center font-extrabold text-white text-base shadow-md shadow-red-600/30 transform -rotate-3 hover:rotate-0 transition">
+        ТТК
+      </div>
+      <div>
+        <h1 class="font-bold text-lg leading-tight tracking-wide flex items-center gap-2 text-slate-900">
+          ТрансТелеКом <span class="text-xs px-2 py-0.5 rounded bg-red-50 text-red-600 border border-red-200 font-semibold">Supervisor Cloud</span>
+        </h1>
+        <div class="flex items-center gap-2 text-xs text-slate-500">
+          <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Общая база данных активна
+        </div>
+      </div>
+    </div>
+
+    <!-- Фильтр периода и действия -->
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs" id="periodButtonsGroup">
+        <button id="p-today" onclick="setPeriod('today')" class="px-2.5 py-1 rounded text-slate-600 hover:bg-white transition">Сегодня</button>
+        <button id="p-yesterday" onclick="setPeriod('yesterday')" class="px-2.5 py-1 rounded text-slate-600 hover:bg-white transition">Вчера</button>
+        <button id="p-week" onclick="setPeriod('week')" class="px-2.5 py-1 rounded text-slate-600 hover:bg-white transition">7 дней</button>
+        <button id="p-month" onclick="setPeriod('month')" class="px-2.5 py-1 rounded text-slate-600 hover:bg-white transition">Месяц</button>
+        <button id="p-all" onclick="setPeriod('all')" class="px-2.5 py-1 rounded text-slate-600 hover:bg-white transition btn-period-active">Все даты</button>
+      </div>
+
+      <div class="flex items-center bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs space-x-1.5 shadow-sm">
+        <span class="text-slate-400 font-medium">С:</span>
+        <input type="date" id="dateFrom" class="bg-transparent border-0 outline-none text-slate-700 cursor-pointer font-medium">
+        <span class="text-slate-400 font-medium">По:</span>
+        <input type="date" id="dateTo" class="bg-transparent border-0 outline-none text-slate-700 cursor-pointer font-medium">
+      </div>
+
+      <!-- Кнопка инструкции -->
+      <button onclick="openGuideModal()" title="Инструкция по выгрузке отчетов" class="flex items-center bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 text-xs font-semibold px-3 py-2 rounded-lg transition shadow-sm">
+        <i data-lucide="book-open" class="w-4 h-4 mr-1.5 text-blue-600"></i> Инструкция
+      </button>
+
+      <button onclick="downloadFlyersTemplate()" title="Скачать шаблон FORapp" class="flex items-center bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold px-3 py-2 rounded-lg transition shadow-sm">
+        <i data-lucide="file-down" class="w-4 h-4 mr-1.5 text-amber-500"></i> Шаблон FORapp
+      </button>
+
+      <button onclick="openLeadModal()" class="flex items-center bg-red-600 hover:bg-red-500 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition shadow-md shadow-red-600/20">
+        <i data-lucide="plus-circle" class="w-4 h-4 mr-1.5"></i> Заявка
+      </button>
+
+      <button onclick="openUploadModal()" class="flex items-center bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold px-3.5 py-2 rounded-lg transition shadow-sm">
+        <i data-lucide="upload-cloud" class="w-4 h-4 mr-1.5 text-red-600"></i> Загрузить отчёты
+      </button>
+    </div>
+  </header>
+
+  <!-- Вкладки -->
+  <div class="bg-white border-b border-slate-200 px-6 py-2 flex space-x-2">
+    <button onclick="switchTab('summary')" id="tab-summary" class="tab-btn flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-red-50 text-red-600 border border-red-200">
+      <i data-lucide="users" class="w-4 h-4 mr-2"></i> Сводка по агентам
+    </button>
+    <button onclick="switchTab('flyers')" id="tab-flyers" class="tab-btn flex items-center px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100">
+      <i data-lucide="map-pin" class="w-4 h-4 mr-2"></i> Адреса раскидки
+    </button>
+    <button onclick="switchTab('leads')" id="tab-leads" class="tab-btn flex items-center px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100">
+      <i data-lucide="check-circle-2" class="w-4 h-4 mr-2"></i> Заявки
+    </button>
+  </div>
+
+  <!-- Главный блок -->
+  <main class="flex-1 p-6 max-w-7xl w-full mx-auto space-y-6">
+    <!-- Карточки KPI -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+        <div class="text-slate-500 text-xs mb-1 font-semibold uppercase tracking-wider">Активных агентов</div>
+        <div class="text-2xl font-bold text-slate-900" id="kpiAgents">0</div>
+        <div class="text-xs text-slate-400 mt-1" id="kpiDatesDisplay">Загрузка...</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+        <div class="text-slate-500 text-xs mb-1 font-semibold uppercase tracking-wider">Отработано смен (Время)</div>
+        <div class="text-2xl font-bold text-red-600" id="kpiTotalWork">00:00:00</div>
+        <div class="text-xs text-emerald-600 mt-1 font-mono font-medium">Чистый разговор: <span id="kpiTotalTalk">00:00:00</span></div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+        <div class="text-slate-500 text-xs mb-1 font-semibold uppercase tracking-wider">Звонки / Диалоги (&gt;20с)</div>
+        <div class="text-2xl font-bold text-slate-900"><span id="kpiCalls">0</span> <span class="text-sm font-normal text-slate-400">/ <span id="kpiDialogs" class="font-semibold text-emerald-600">0</span></span></div>
+        <div class="text-xs text-slate-500 mt-1"><span id="kpiReaches" class="font-semibold text-slate-700">0</span> дозвонов (&gt;10с)</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+        <div class="text-slate-500 text-xs mb-1 font-semibold uppercase tracking-wider">Раскидка / Заявки</div>
+        <div class="text-2xl font-bold text-slate-900"><span id="kpiFlyers">0</span> <span class="text-sm font-normal text-slate-400">листовок / <span id="kpiLeads" class="text-red-600 font-bold">0</span> заявок</span></div>
+        <div class="text-xs text-slate-500 mt-1"><span id="kpiHouses" class="font-semibold text-slate-700">0</span> домов обойдено</div>
+      </div>
+    </div>
+
+    <!-- Таблица агентов -->
+    <div id="content-summary" class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+      <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+        <div class="font-bold text-sm text-slate-900 flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-red-600"></span> Сводные показатели по агентам
+        </div>
+        <button onclick="fetchCloudData()" class="text-xs text-red-600 hover:text-red-700 font-semibold flex items-center gap-1">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Обновить данные
+        </button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-100 text-slate-600 text-xs uppercase font-semibold border-b border-slate-200">
+            <tr>
+              <th class="py-3.5 px-4">Агент</th>
+              <th class="py-3.5 px-4">Время работы (Смена)</th>
+              <th class="py-3.5 px-4">Чистый разговор</th>
+              <th class="py-3.5 px-4 text-center">Звонки</th>
+              <th class="py-3.5 px-4 text-center">Дозвоны (&gt;10с)</th>
+              <th class="py-3.5 px-4 text-center text-emerald-600">Диалоги (&gt;20с)</th>
+              <th class="py-3.5 px-4 text-center text-amber-600">Листовок</th>
+              <th class="py-3.5 px-4 text-center text-red-600">Заявки</th>
+            </tr>
+          </thead>
+          <tbody id="agentsTableBody" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Графики -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+          <div class="flex items-center gap-2">
+            <i data-lucide="phone-call" class="w-4 h-4 text-red-600"></i>
+            <h3 class="text-sm font-bold text-slate-900">Динамика звонков по дням</h3>
+          </div>
+          <span class="text-xs text-slate-400 font-mono">Звонки / Дозвоны / Диалоги</span>
+        </div>
+        <div class="relative h-64 w-full">
+          <canvas id="callsChart"></canvas>
+        </div>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+          <div class="flex items-center gap-2">
+            <i data-lucide="map-pin" class="w-4 h-4 text-amber-500"></i>
+            <h3 class="text-sm font-bold text-slate-900">Динамика раскидки и заявок</h3>
+          </div>
+          <span class="text-xs text-slate-400 font-mono">Листовки vs Заявки</span>
+        </div>
+        <div class="relative h-64 w-full">
+          <canvas id="flyersChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- БЛОК ИИ-АНАЛИТИКИ ПЕРИОДА -->
+    <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-red-50 border border-red-200 flex items-center justify-center text-red-600">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-slate-900">ИИ-Аналитика и аудит за выбранный период</h2>
+            <p class="text-xs text-slate-500">Автоматический разбор показателей, слабых мест и план действий</p>
+          </div>
+        </div>
+        <button onclick="generateDeepAiAnalysis()" class="flex items-center gap-1.5 text-xs bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-lg font-semibold transition shadow-sm">
+          <i data-lucide="cpu" class="w-4 h-4 text-red-400"></i> Сгенерировать глубокий аудит
+        </button>
+      </div>
+
+      <div id="aiAnalysisContainer" class="space-y-4 text-sm leading-relaxed">
+        <div class="text-center py-6 text-slate-400">Загрузите или обновите данные для формирования отчета.</div>
+      </div>
+    </div>
+
+    <!-- Таблица раскидки -->
+    <div id="content-flyers" class="hidden bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+      <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+        <div class="font-bold text-sm text-slate-900">Журнал расклейки / раскидки (FORapp)</div>
+        <button onclick="downloadFlyersTemplate()" class="flex items-center gap-1.5 text-xs bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3 py-1.5 rounded-lg font-medium shadow-sm">
+          <i data-lucide="download" class="w-3.5 h-3.5 text-amber-500"></i> Скачать шаблон
+        </button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-100 text-slate-600 text-xs uppercase font-semibold border-b border-slate-200">
+            <tr>
+              <th class="py-3 px-4">Дата</th>
+              <th class="py-3 px-4">Исполнитель</th>
+              <th class="py-3 px-4">Адрес</th>
+              <th class="py-3 px-4 text-center">Листовок</th>
+              <th class="py-3 px-4">Время</th>
+              <th class="py-3 px-4">Дистанция</th>
+              <th class="py-3 px-4 text-center">Фото</th>
+            </tr>
+          </thead>
+          <tbody id="flyersTableBody" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Таблица заявок -->
+    <div id="content-leads" class="hidden bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+      <div class="px-6 py-4 border-b border-slate-200 font-bold text-sm bg-slate-50/50 text-slate-900">
+        Журнал заявок ТТК
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-100 text-slate-600 text-xs uppercase font-semibold border-b border-slate-200">
+            <tr>
+              <th class="py-3 px-4">Дата</th>
+              <th class="py-3 px-4">Агент</th>
+              <th class="py-3 px-4">Источник</th>
+              <th class="py-3 px-4">Телефон</th>
+              <th class="py-3 px-4">Адрес / Тариф</th>
+            </tr>
+          </thead>
+          <tbody id="leadsTableBody" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- МОДАЛКА: ИНСТРУКЦИЯ ПО ВЫГРУЗКЕ -->
+  <div id="guideModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl max-w-4xl w-full p-6 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3 sticky top-0 bg-white z-10">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
+            <i data-lucide="book-open" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-slate-900">Инструкция по выгрузке отчётов</h3>
+            <p class="text-xs text-slate-500">Пошаговое руководство для ВАТС и Инфопанели ТТК (FORapp)</p>
+          </div>
+        </div>
+        <button onclick="closeGuideModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Раздел 1: ВАТС / Звонки -->
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center text-xs font-bold">1</span>
+            Выгрузка звонков (Для ИТМ) — ВАТС
+          </h4>
+          <a href="https://20vatc006325-001.cloudpbx.ttk.ru/" target="_blank" class="text-xs bg-red-600 hover:bg-red-500 text-white font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1 shadow-sm">
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Открыть ВАТС
+          </a>
+        </div>
+
+        <ol class="list-decimal list-inside text-xs text-slate-700 space-y-1.5 leading-relaxed font-medium">
+          <li>Перейдите на сайт ВАТС ТТК: <a href="https://20vatc006325-001.cloudpbx.ttk.ru/" target="_blank" class="text-blue-600 underline">20vatc006325-001.cloudpbx.ttk.ru</a></li>
+          <li>Перейдите во вкладку <b>«История»</b> (раздел <i>«Внешние звонки»</i>).</li>
+          <li>Укажите нужный <b>Период</b> (например, «Вчера», «Сегодня» или интервал дат).</li>
+          <li>В поле поиска в правом верхнем углу введите <b>фамилию агента</b>.</li>
+          <li>Нажмите на иконку <b>«XLS»</b> в правом верхнем углу для выгрузки отчёта.</li>
+        </ol>
+
+        <div class="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm cursor-zoom-in" onclick="zoomImage('screen1.png')">
+          <img src="screen1.png" alt="Скриншот 1: ВАТС" class="w-full h-auto object-cover hover:opacity-95 transition" onerror="this.parentElement.innerHTML='<div class=\'p-4 text-center text-xs text-slate-400 border-2 border-dashed rounded-lg\'>Положите файл <b>screen1.png</b> в папку с сайтом</div>'">
+        </div>
+      </div>
+
+      <!-- Раздел 2: FORapp / Раскидка -->
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold">2</span>
+            Выгрузка раскидки / расклейки (FORapp)
+          </h4>
+          <a href="https://uber.ttk.ru/dashboard" target="_blank" class="text-xs bg-amber-500 hover:bg-amber-600 text-white font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1 shadow-sm">
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Открыть Uber ТТК
+          </a>
+        </div>
+
+        <ol class="list-decimal list-inside text-xs text-slate-700 space-y-1.5 leading-relaxed font-medium">
+          <li>Перейдите в дашборд: <a href="https://uber.ttk.ru/dashboard" target="_blank" class="text-blue-600 underline">uber.ttk.ru/dashboard</a></li>
+          <li>Откройте вкладку <b>«Отчеты»</b> в левом боковом меню.</li>
+          <li>В блоке фильтров настройте два параметра:
+            <ul class="list-disc list-inside ml-4 mt-1 space-y-1 font-normal text-slate-600">
+              <li><b>Узел</b> &rarr; <i>По названию</i> &rarr; укажите ваш узел;</li>
+              <li><b>Отчет</b> &rarr; <i>По дате и времени создания</i> &rarr; задайте интервал с <code>00:00</code> по <code>23:59</code>.</li>
+            </ul>
+          </li>
+          <li>Нажмите синюю кнопку <b>«Применить»</b>.</li>
+        </ol>
+
+        <div class="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm cursor-zoom-in mb-3" onclick="zoomImage('screen2.png')">
+          <img src="screen2.png" alt="Скриншот 2: Фильтры Инфопанели" class="w-full h-auto object-cover hover:opacity-95 transition" onerror="this.parentElement.innerHTML='<div class=\'p-4 text-center text-xs text-slate-400 border-2 border-dashed rounded-lg\'>Положите файл <b>screen2.png</b> в папку с сайтом</div>'">
+        </div>
+
+        <ol class="list-decimal list-inside text-xs text-slate-700 space-y-1.5 leading-relaxed font-medium" start="5">
+          <li>Скачайте чистый шаблон выгрузки, нажав: 
+            <button onclick="downloadFlyersTemplate()" class="inline-flex items-center text-xs bg-amber-100 text-amber-800 border border-amber-300 font-bold px-2 py-0.5 rounded hover:bg-amber-200 ml-1">
+              <i data-lucide="file-down" class="w-3 h-3 mr-1"></i> Шаблон FORapp
+            </button>
+          </li>
+          <li>В верхнем меню нажмите кнопку <b>«Экспорт»</b> (выберите формат <b>XLSX</b>).</li>
+          <li>В блоке <i>«Загрузите схему экспорта»</i> нажмите <b>«Прикрепить excel файл»</b> и выберите скачанный шаблон.</li>
+          <li>Нажмите синюю кнопку <b>«Экспорт»</b> для получения файла.</li>
+        </ol>
+
+        <div class="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm cursor-zoom-in" onclick="zoomImage('screen3.png')">
+          <img src="screen3.png" alt="Скриншот 3: Схема экспорта" class="w-full h-auto object-cover hover:opacity-95 transition" onerror="this.parentElement.innerHTML='<div class=\'p-4 text-center text-xs text-slate-400 border-2 border-dashed rounded-lg\'>Положите файл <b>screen3.png</b> в папку с сайтом</div>'">
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-2">
+        <button onclick="closeGuideModal()" class="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition shadow-md">
+          Понятно, закрыть инструкцию
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модалка зума картинок на весь экран -->
+  <div id="imageZoomModal" class="hidden fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4 cursor-zoom-out" onclick="this.classList.add('hidden')">
+    <img id="zoomedImg" src="" alt="Full view" class="max-w-full max-h-[95vh] rounded-lg shadow-2xl object-contain">
+  </div>
+
+  <!-- Модалка загрузки отчетов -->
+  <div id="uploadModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="text-lg font-bold flex items-center gap-2 text-slate-900">
+          <span class="w-2.5 h-2.5 rounded-full bg-red-600"></span> Импорт в единую базу ТТК
+        </h3>
+      </div>
+
+      <div class="border-2 border-dashed border-slate-200 hover:border-red-500 bg-slate-50/60 rounded-xl p-5 text-center cursor-pointer transition" onclick="document.getElementById('fileCalls').click()">
+        <i data-lucide="phone-call" class="w-8 h-8 mx-auto text-red-600 mb-2"></i>
+        <span class="text-sm font-bold text-slate-800 block">Загрузить файл звонков (.xlsx)</span>
+        <input type="file" id="fileCalls" accept=".xlsx, .xls" class="hidden" onchange="handleCallsFile(event)">
+      </div>
+
+      <div class="border-2 border-dashed border-slate-200 hover:border-amber-500 bg-slate-50/60 rounded-xl p-5 text-center cursor-pointer transition" onclick="document.getElementById('fileFlyers').click()">
+        <i data-lucide="map-pin" class="w-8 h-8 mx-auto text-amber-500 mb-2"></i>
+        <span class="text-sm font-bold text-slate-800 block">Загрузить отчёт FORapp (.xlsx)</span>
+        <input type="file" id="fileFlyers" accept=".xlsx, .xls" class="hidden" onchange="handleFlyersFile(event)">
+      </div>
+
+      <div id="uploadStatus" class="hidden p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 text-center font-medium"></div>
+      <button onclick="closeUploadModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-sm transition">Закрыть</button>
+    </div>
+  </div>
+
+  <!-- Модалка заявки -->
+  <div id="leadModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <form onsubmit="saveLead(event)" class="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <h3 class="text-lg font-bold flex items-center gap-2 text-slate-900 border-b border-slate-100 pb-3">
+        <span class="w-2.5 h-2.5 rounded-full bg-red-600"></span> Добавление заявки в базу
+      </h3>
+      <div>
+        <label class="text-xs text-slate-600 font-semibold block mb-1.5">Выберите агента *</label>
+        <select id="leadAgentSelect" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 outline-none focus:border-red-500 focus:bg-white transition">
+          <option value="">-- Выберите агента --</option>
+        </select>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs text-slate-600 font-semibold block mb-1.5">Источник</label>
+          <select id="leadChannel" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 outline-none focus:border-red-500 focus:bg-white transition">
+            <option>Звонок</option>
+            <option>Раскидка</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs text-slate-600 font-semibold block mb-1.5">Телефон клиента</label>
+          <input type="text" id="leadPhone" placeholder="79000000000" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 outline-none focus:border-red-500 focus:bg-white transition">
+        </div>
+      </div>
+      <div>
+        <label class="text-xs text-slate-600 font-semibold block mb-1.5">Адрес / Тариф</label>
+        <input type="text" id="leadAddress" placeholder="ул. Ленина, д. 10 / 500 Мбит" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 outline-none focus:border-red-500 focus:bg-white transition">
+      </div>
+      <div>
+        <label class="text-xs text-slate-600 font-semibold block mb-1.5">Дата заявки</label>
+        <input type="date" id="leadDate" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 outline-none focus:border-red-500 focus:bg-white transition">
+      </div>
+      <div class="flex space-x-3 pt-2">
+        <button type="button" onclick="closeLeadModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition">Отмена</button>
+        <button type="submit" class="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-semibold shadow-md shadow-red-600/30 transition">Сохранить в базу</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    // ==========================================
+    // НАСТРОЙКИ SUPABASE & TELEGRAM
+    // ==========================================
+    const SUPABASE_URL = "https://zrhkttaflljtltlaaogp.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_5mscWB3Oap5pa8sh9XYgtA_MjkRUIuc";
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const TELEGRAM_BOT_TOKEN = "7588674549:AAFlxjSDZnU1b1ND-Vcc4yhV1EffnPk5RjE";
+    const TELEGRAM_CHAT_ID = "388701699";
+
+    const GEMINI_API_KEY = "AQ.Ab8RN6Ku9a_ro0H7_WiEiT7rz9iuG6unhqU0fqYcU7gvlfb_XQ";
+
+    async function sendTelegramNotification(message) {
+      try {
+        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: TELEGRAM_CHAT_ID,
+            text: message,
+            parse_mode: 'HTML'
+          })
+        });
+      } catch (e) {
+        console.error("Ошибка отправки в Telegram:", e);
+      }
+    }
+
+    let db = { calls: [], flyers: [], leads: [] };
+    let chartCallsInstance = null;
+    let chartFlyersInstance = null;
+    let currentAggregatedData = null;
+
+    const dateFromInput = document.getElementById('dateFrom');
+    const dateToInput = document.getElementById('dateTo');
+
+    setPeriod('all');
+
+    dateFromInput.addEventListener('change', () => { clearPeriodButtons(); renderDashboard(); });
+    dateToInput.addEventListener('change', () => { clearPeriodButtons(); renderDashboard(); });
+
+    function clearPeriodButtons() {
+      ['today', 'yesterday', 'week', 'month', 'all'].forEach(id => {
+        const btn = document.getElementById(`p-${id}`);
+        if (btn) btn.classList.remove('btn-period-active');
+      });
+    }
+
+    function setPeriod(type) {
+      clearPeriodButtons();
+      const activeBtn = document.getElementById(`p-${type}`);
+      if (activeBtn) activeBtn.classList.add('btn-period-active');
+
+      const now = new Date();
+      const format = d => d.toISOString().split('T')[0];
+
+      if (type === 'today') {
+        dateFromInput.value = format(now);
+        dateToInput.value = format(now);
+      } else if (type === 'yesterday') {
+        const y = new Date(now); y.setDate(y.getDate() - 1);
+        dateFromInput.value = format(y);
+        dateToInput.value = format(y);
+      } else if (type === 'week') {
+        const w = new Date(now); w.setDate(w.getDate() - 7);
+        dateFromInput.value = format(w);
+        dateToInput.value = format(now);
+      } else if (type === 'month') {
+        const m = new Date(now.getFullYear(), now.getMonth(), 1);
+        dateFromInput.value = format(m);
+        dateToInput.value = format(now);
+      } else if (type === 'all') {
+        dateFromInput.value = '2024-01-01';
+        dateToInput.value = '2028-12-31';
+      }
+      renderDashboard();
+    }
+
+    async function fetchCloudData() {
+      try {
+        const [callsRes, flyersRes, leadsRes] = await Promise.all([
+          sb.from('sv_calls').select('*'),
+          sb.from('sv_flyers').select('*'),
+          sb.from('sv_leads').select('*')
+        ]);
+
+        if (callsRes.data) {
+          db.calls = callsRes.data.map(c => ({
+            agent: c.agent,
+            date: c.call_date,
+            time: c.call_time,
+            duration: c.duration
+          }));
+        }
+
+        if (flyersRes.data) {
+          db.flyers = flyersRes.data.map(f => ({
+            agent: f.agent,
+            date: f.action_date,
+            address: f.address,
+            count: f.flyers_count,
+            time: f.total_time,
+            dist: f.max_distance,
+            photo: f.photo
+          }));
+        }
+
+        if (leadsRes.data) {
+          db.leads = leadsRes.data.map(l => ({
+            agent: l.agent,
+            channel: l.channel,
+            phone: l.phone,
+            address: l.address,
+            date: l.lead_date
+          }));
+        }
+
+        renderDashboard();
+      } catch (err) {
+        console.error('Ошибка загрузки из Supabase:', err);
+      }
+    }
+
+    function downloadFlyersTemplate() {
+      const templateData = [
+        ['header', 'Информация по дому', null, null, 'Реклама конкурентов', null, null, null, null, 'Отчет', null, null, null, null, null, 'Другое'],
+        ['header', 'Адрес дома/здания', 'Максимальная удаленность в рамках расклейки', null, 'Селфи', 'Фото размещенной рекламы', 'Сообщение о проблеме', 'Кол-во листовок', null, 'Дата создания задания', 'Дата расклейки', 'Суммарное время выполнения отчета', 'Исполнитель', 'Узел исполнителя', 'МР', 'Ответ CRM'],
+        ['keys', 'task.placemark.address', 'max_distance', null, '#selfi_from_detour', '#photo_of_placed_advertisement', '#report_a_problem', '#number_of_flyers', null, 'task.created_at', 'created_at', 'total_time', 'user.name', 'department', 'department.mr_title', 'custom_fields.crm_error'],
+        [null, 'Россия, Саратовская область, Саратов, улица имени П.Ф. Батавина, 2', '7014 км. 463 м.', null, 'http://uber.ttk.ru/.../selfie.jpg', 'http://uber.ttk.ru/.../ad.jpg', null, 144, null, '2026-08-11 11:21:26 UTC', '2026-08-11', '00:11:25', 'Самойлина Анна Валерьевна', 'Огнищева Мария - Все города', 'МР Верхневолжский', null]
+      ];
+
+      const ws = XLSX.utils.aoa_to_sheet(templateData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'FORapp');
+      XLSX.writeFile(wb, '_export_FORapp_report_Расклейка_или_Раскидка.xlsx');
+    }
+
+    function parseDurationInSeconds(val) {
+      if (!val && val !== 0) return 0;
+      if (typeof val === 'number') {
+        if (val > 0 && val < 1) return Math.round(val * 86400);
+        if (val >= 1 && val < 86400) return Math.round(val);
+        return 0;
+      }
+      if (val instanceof Date) {
+        return val.getHours() * 3600 + val.getMinutes() * 60 + val.getSeconds();
+      }
+      const s = String(val).trim();
+      if (s.includes(':')) {
+        const p = s.split(':').map(Number);
+        if (p.length === 3) return (p[0]||0)*3600 + (p[1]||0)*60 + (p[2]||0);
+        if (p.length === 2) return (p[0]||0)*60 + (p[1]||0);
+      }
+      const num = Number(s);
+      return (!isNaN(num) && num < 86400) ? Math.round(num) : 0;
+    }
+
+    function formatSec(sec) {
+      if (!sec || isNaN(sec) || sec < 0) return '00:00:00';
+      const total = Math.floor(sec);
+      const h = Math.floor(total / 3600).toString().padStart(2, '0');
+      const m = Math.floor((total % 3600) / 60).toString().padStart(2, '0');
+      const s = Math.floor(total % 60).toString().padStart(2, '0');
+      return `${h}:${m}:${s}`;
+    }
+
+    function timeToSec(val) {
+      if (!val) return 0;
+      if (typeof val === 'number') return Math.round(val * 86400);
+      const p = String(val).trim().split(':').map(Number);
+      if (p.length === 3) return (p[0]||0)*3600 + (p[1]||0)*60 + (p[2]||0);
+      if (p.length === 2) return (p[0]||0)*60 + (p[1]||0);
+      return 0;
+    }
+
+    function switchTab(tabId) {
+      ['summary', 'flyers', 'leads'].forEach(t => {
+        document.getElementById(`content-${t}`).classList.toggle('hidden', t !== tabId);
+        const btn = document.getElementById(`tab-${t}`);
+        if (t === tabId) {
+          btn.className = 'tab-btn flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-red-50 text-red-600 border border-red-200';
+        } else {
+          btn.className = 'tab-btn flex items-center px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100';
+        }
+      });
+      lucide.createIcons();
+    }
+
+    function openUploadModal() { document.getElementById('uploadModal').classList.remove('hidden'); }
+    function closeUploadModal() { document.getElementById('uploadModal').classList.add('hidden'); }
+    function openLeadModal() { 
+      updateAgentDropdown();
+      document.getElementById('leadDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('leadModal').classList.remove('hidden'); 
+    }
+    function closeLeadModal() { document.getElementById('leadModal').classList.add('hidden'); }
+
+    // Управление модалками инструкции и зума картинок
+    function openGuideModal() { document.getElementById('guideModal').classList.remove('hidden'); }
+    function closeGuideModal() { document.getElementById('guideModal').classList.add('hidden'); }
+    function zoomImage(src) {
+      const zoomModal = document.getElementById('imageZoomModal');
+      const zoomedImg = document.getElementById('zoomedImg');
+      zoomedImg.src = src;
+      zoomModal.classList.remove('hidden');
+    }
+
+    function updateAgentDropdown() {
+      const agentSet = new Set();
+      db.calls.forEach(c => c.agent && agentSet.add(c.agent));
+      db.flyers.forEach(f => f.agent && agentSet.add(f.agent));
+      
+      const select = document.getElementById('leadAgentSelect');
+      select.innerHTML = '<option value="">-- Выберите агента --</option>';
+      Array.from(agentSet).sort().forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.innerText = name;
+        select.appendChild(opt);
+      });
+    }
+
+    async function handleCallsFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const status = document.getElementById('uploadStatus');
+      status.classList.remove('hidden');
+      status.innerText = 'Разбор звонков...';
+
+      const data = await file.arrayBuffer();
+      const wb = XLSX.read(data, { cellDates: false });
+      const sheetName = wb.SheetNames.find(s => s.toLowerCase().includes('звон')) || wb.SheetNames[0];
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '' });
+
+      let hIdx = -1;
+      for (let i = 0; i < Math.min(rows.length, 25); i++) {
+        const str = rows[i].map(c => String(c).toLowerCase()).join(' ');
+        if (str.includes('сотрудник') && (str.includes('длительность') || str.includes('время'))) {
+          hIdx = i;
+          break;
+        }
+      }
+
+      if (hIdx === -1) { alert('Таблица звонков не найдена'); return; }
+
+      const headers = rows[hIdx].map(h => String(h).trim().toLowerCase());
+      const colAgent = headers.findIndex(h => h.includes('сотрудник'));
+      const colDate = headers.findIndex(h => h.includes('дата'));
+      const colTime = headers.findIndex(h => h.includes('время'));
+      const colDur = headers.findIndex(h => h.includes('длительность'));
+
+      let rowsToInsert = [];
+      const agentListSet = new Set();
+      let minDate = null, maxDate = null;
+
+      for (let i = hIdx + 1; i < rows.length; i++) {
+        const r = rows[i];
+        const agent = String(r[colAgent] || '').trim();
+        if (!agent || agent.toLowerCase().includes('общий итог')) continue;
+
+        let dateVal = r[colDate];
+        let callDate = '';
+        if (typeof dateVal === 'number') {
+          const d = new Date(Math.round((dateVal - 25569) * 86400 * 1000));
+          callDate = d.toISOString().split('T')[0];
+        } else {
+          callDate = String(dateVal || '').split(' ')[0].trim();
+        }
+
+        let timeVal = r[colTime];
+        let callTime = '00:00:00';
+        if (typeof timeVal === 'number') {
+          callTime = formatSec(Math.round(timeVal * 86400));
+        } else {
+          callTime = String(timeVal || '00:00:00').trim();
+        }
+
+        const duration = parseDurationInSeconds(r[colDur]);
+
+        if (callDate && agent) {
+          const key = `${agent}|${callDate}|${callTime}|${duration}`;
+          rowsToInsert.push({
+            agent,
+            call_date: callDate,
+            call_time: callTime,
+            duration,
+            unique_key: key
+          });
+          agentListSet.add(agent);
+          if (!minDate || callDate < minDate) minDate = callDate;
+          if (!maxDate || callDate > maxDate) maxDate = callDate;
+        }
+      }
+
+      status.innerText = `Сохранение ${rowsToInsert.length} звонков в облако...`;
+
+      for (let i = 0; i < rowsToInsert.length; i += 500) {
+        const batch = rowsToInsert.slice(i, i + 500);
+        await sb.from('sv_calls').upsert(batch, { onConflict: 'unique_key', ignoreDuplicates: true });
+      }
+
+      await fetchCloudData();
+
+      const tgMsg = `📞 <b>Загружен отчёт по звонкам!</b>\n\n` +
+        `📁 Файл: <code>${file.name}</code>\n` +
+        `📅 Период: <b>${minDate || '—'} — ${maxDate || '—'}</b>\n` +
+        `📊 Строк звонков: <b>${rowsToInsert.length}</b>\n` +
+        `👥 Агентов в файле: <b>${agentListSet.size}</b>\n` +
+        `🕒 Время: <b>${new Date().toLocaleTimeString('ru-RU')}</b>`;
+      sendTelegramNotification(tgMsg);
+
+      status.innerText = `Успешно сохранено в единую базу!`;
+      setTimeout(() => {
+        closeUploadModal();
+        status.classList.add('hidden');
+      }, 1000);
+    }
+
+    async function handleFlyersFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const status = document.getElementById('uploadStatus');
+      status.classList.remove('hidden');
+      status.innerText = 'Разбор FORapp...';
+
+      const data = await file.arrayBuffer();
+      const wb = XLSX.read(data);
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
+
+      let kIdx = -1;
+      for (let i = 0; i < Math.min(rows.length, 10); i++) {
+        const str = rows[i].map(c => String(c).toLowerCase()).join(' ');
+        if (str.includes('task.placemark.address') || str.includes('user.name')) {
+          kIdx = i;
+          break;
+        }
+      }
+
+      if (kIdx === -1) { alert('Отчёт FORapp не распознан'); return; }
+
+      const keys = rows[kIdx].map(k => String(k).trim());
+      const colAddress = keys.indexOf('task.placemark.address');
+      const colFlyers = keys.indexOf('#number_of_flyers');
+      const colAgent = keys.indexOf('user.name');
+      const colDate = keys.indexOf('created_at');
+      const colTotalTime = keys.indexOf('total_time');
+      const colMaxDist = keys.indexOf('max_distance');
+      const colPhoto = keys.indexOf('#photo_of_placed_advertisement');
+
+      let rowsToInsert = [];
+      let totalFlyersCount = 0;
+      const agentListSet = new Set();
+      let minDate = null, maxDate = null;
+
+      for (let i = kIdx + 1; i < rows.length; i++) {
+        const r = rows[i];
+        const agent = String(r[colAgent] || '').trim();
+        const address = String(r[colAddress] || '').trim();
+        if (!agent || !address) continue;
+
+        let date = String(r[colDate] || '').split(' ')[0].trim();
+        let count = parseInt(r[colFlyers], 10) || 0;
+
+        if (date) {
+          const key = `${agent.toLowerCase()}|${date}|${address.toLowerCase()}`;
+          rowsToInsert.push({
+            agent,
+            action_date: date,
+            address,
+            flyers_count: count,
+            total_time: String(r[colTotalTime] || ''),
+            max_distance: String(r[colMaxDist] || ''),
+            photo: String(r[colPhoto] || ''),
+            unique_key: key
+          });
+          totalFlyersCount += count;
+          agentListSet.add(agent);
+          if (!minDate || date < minDate) minDate = date;
+          if (!maxDate || date > maxDate) maxDate = date;
+        }
+      }
+
+      status.innerText = `Сохранение ${rowsToInsert.length} адресов в облако...`;
+
+      for (let i = 0; i < rowsToInsert.length; i += 300) {
+        const batch = rowsToInsert.slice(i, i + 300);
+        await sb.from('sv_flyers').upsert(batch, { onConflict: 'unique_key', ignoreDuplicates: true });
+      }
+
+      await fetchCloudData();
+
+      const tgMsg = `📬 <b>Загружен отчёт по раскидке (FORapp)!</b>\n\n` +
+        `📁 Файл: <code>${file.name}</code>\n` +
+        `📅 Период: <b>${minDate || '—'} — ${maxDate || '—'}</b>\n` +
+        `🏠 Домов: <b>${rowsToInsert.length}</b>\n` +
+        `📄 Листовок: <b>${totalFlyersCount} шт.</b>\n` +
+        `👥 Исполнителей: <b>${agentListSet.size}</b>\n` +
+        `🕒 Время: <b>${new Date().toLocaleTimeString('ru-RU')}</b>`;
+      sendTelegramNotification(tgMsg);
+
+      status.innerText = `Успешно сохранено в единую базу!`;
+      setTimeout(() => {
+        closeUploadModal();
+        status.classList.add('hidden');
+      }, 1000);
+    }
+
+    async function saveLead(e) {
+      e.preventDefault();
+      const agent = document.getElementById('leadAgentSelect').value;
+      if (!agent) { alert('Выберите агента'); return; }
+
+      const leadData = {
+        agent,
+        channel: document.getElementById('leadChannel').value,
+        phone: document.getElementById('leadPhone').value,
+        address: document.getElementById('leadAddress').value,
+        lead_date: document.getElementById('leadDate').value || dateToInput.value
+      };
+
+      await sb.from('sv_leads').insert([leadData]);
+      await fetchCloudData();
+
+      const tgMsg = `🔥 <b>Новая заявка ТТК!</b>\n\n` +
+        `👤 Агент: <b>${leadData.agent}</b>\n` +
+        `📡 Источник: <b>${leadData.channel}</b>\n` +
+        `📱 Телефон: <code>${leadData.phone || 'Не указан'}</code>\n` +
+        `📍 Адрес / Тариф: <b>${leadData.address || 'Не указан'}</b>\n` +
+        `📅 Дата: <b>${leadData.lead_date}</b>`;
+      sendTelegramNotification(tgMsg);
+
+      closeLeadModal();
+      document.getElementById('leadPhone').value = '';
+      document.getElementById('leadAddress').value = '';
+    }
+
+    function updateCharts(periodCalls, periodFlyers, periodLeads) {
+      const datesSet = new Set();
+      periodCalls.forEach(c => c.date && datesSet.add(c.date));
+      periodFlyers.forEach(f => f.date && datesSet.add(f.date));
+      periodLeads.forEach(l => l.date && datesSet.add(l.date));
+
+      const sortedDates = Array.from(datesSet).sort();
+
+      const callsPerDay = [];
+      const reachesPerDay = [];
+      const dialogsPerDay = [];
+      const flyersPerDay = [];
+      const leadsPerDay = [];
+
+      sortedDates.forEach(d => {
+        const dCalls = periodCalls.filter(c => c.date === d);
+        callsPerDay.push(dCalls.length);
+        reachesPerDay.push(dCalls.filter(c => c.duration > 10).length);
+        dialogsPerDay.push(dCalls.filter(c => c.duration > 20).length);
+
+        const dFlyers = periodFlyers.filter(f => f.date === d);
+        flyersPerDay.push(dFlyers.reduce((s, f) => s + f.count, 0));
+
+        const dLeads = periodLeads.filter(l => l.date === d);
+        leadsPerDay.push(dLeads.length);
+      });
+
+      const ctxCalls = document.getElementById('callsChart');
+      if (ctxCalls) {
+        if (chartCallsInstance) chartCallsInstance.destroy();
+        chartCallsInstance = new Chart(ctxCalls, {
+          type: 'line',
+          data: {
+            labels: sortedDates.length ? sortedDates : ['Нет данных'],
+            datasets: [
+              {
+                label: 'Всего звонков',
+                data: callsPerDay,
+                borderColor: '#e21a1a',
+                backgroundColor: 'rgba(226, 26, 26, 0.08)',
+                fill: true,
+                tension: 0.35,
+                borderWidth: 2.5,
+                pointRadius: 4,
+                pointBackgroundColor: '#e21a1a'
+              },
+              {
+                label: 'Дозвоны (>10с)',
+                data: reachesPerDay,
+                borderColor: '#0284c7',
+                backgroundColor: 'transparent',
+                tension: 0.35,
+                borderWidth: 2,
+                pointRadius: 3,
+                pointBackgroundColor: '#0284c7'
+              },
+              {
+                label: 'Диалоги (>20с)',
+                data: dialogsPerDay,
+                borderColor: '#16a34a',
+                backgroundColor: 'transparent',
+                tension: 0.35,
+                borderWidth: 2.5,
+                pointRadius: 4,
+                pointBackgroundColor: '#16a34a'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: { labels: { color: '#475569', font: { size: 11, weight: 600 } } },
+              tooltip: { backgroundColor: '#ffffff', titleColor: '#0f172a', bodyColor: '#334155', borderColor: '#e2e8f0', borderWidth: 1, padding: 10 }
+            },
+            scales: {
+              x: { grid: { color: '#f1f5f9' }, ticks: { color: '#64748b', font: { size: 10 } } },
+              y: { grid: { color: '#f1f5f9' }, ticks: { color: '#64748b', font: { size: 10 }, stepSize: 1 } }
+            }
+          }
+        });
+      }
+
+      const ctxFlyers = document.getElementById('flyersChart');
+      if (ctxFlyers) {
+        if (chartFlyersInstance) chartFlyersInstance.destroy();
+        chartFlyersInstance = new Chart(ctxFlyers, {
+          type: 'bar',
+          data: {
+            labels: sortedDates.length ? sortedDates : ['Нет данных'],
+            datasets: [
+              {
+                label: 'Листовок (шт)',
+                data: flyersPerDay,
+                backgroundColor: 'rgba(245, 158, 11, 0.85)',
+                borderColor: '#d97706',
+                borderWidth: 1,
+                borderRadius: 4,
+                yAxisID: 'y'
+              },
+              {
+                label: 'Заявки (шт)',
+                data: leadsPerDay,
+                type: 'line',
+                borderColor: '#dc2626',
+                backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                borderWidth: 3,
+                pointRadius: 5,
+                pointBackgroundColor: '#dc2626',
+                tension: 0.3,
+                yAxisID: 'y1'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: { labels: { color: '#475569', font: { size: 11, weight: 600 } } },
+              tooltip: { backgroundColor: '#ffffff', titleColor: '#0f172a', bodyColor: '#334155', borderColor: '#e2e8f0', borderWidth: 1, padding: 10 }
+            },
+            scales: {
+              x: { grid: { color: '#f1f5f9' }, ticks: { color: '#64748b', font: { size: 10 } } },
+              y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                grid: { color: '#f1f5f9' },
+                ticks: { color: '#d97706', font: { size: 10 } },
+                title: { display: true, text: 'Листовки', color: '#d97706', font: { size: 10, weight: 600 } }
+              },
+              y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                grid: { drawOnChartArea: false },
+                ticks: { color: '#dc2626', font: { size: 10 }, stepSize: 1 },
+                title: { display: true, text: 'Заявки', color: '#dc2626', font: { size: 10, weight: 600 } }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // Базовый вид аудита
+    function renderSmartAnalytics(data) {
+      const container = document.getElementById('aiAnalysisContainer');
+      if (!container) return;
+
+      if (!data || data.agents.length === 0) {
+        container.innerHTML = `<div class="p-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-400 text-center">Нет данных для анализа за выбранный период ${data.period}.</div>`;
+        return;
+      }
+
+      const reachRate = data.totalCalls ? Math.round((data.totalReaches / data.totalCalls) * 100) : 0;
+      const dialogRate = data.totalCalls ? Math.round((data.totalDialogs / data.totalCalls) * 100) : 0;
+      const utilization = data.totalWorkSec ? Math.min(100, Math.round((data.totalTalkSec / data.totalWorkSec) * 100)) : 0;
+      
+      const sortedAgents = [...data.agents].sort((a, b) => b.calls - a.calls);
+      const topAgent = sortedAgents[0];
+      const lowAgent = sortedAgents[sortedAgents.length - 1];
+
+      let efficiencyBadge = 'Норма';
+      let badgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
+      if (dialogRate >= 15 && utilization >= 12) {
+        efficiencyBadge = 'Высокая эффективность';
+        badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      } else if (dialogRate < 8 || utilization < 5) {
+        efficiencyBadge = 'Требуется контроль супервайзера';
+        badgeColor = 'bg-red-50 text-red-700 border-red-200';
+      }
+
+      container.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+            <div class="text-xs text-slate-500 font-semibold uppercase mb-1">Качество дозвона</div>
+            <div class="text-xl font-bold text-slate-900">${dialogRate}% <span class="text-xs text-slate-500 font-normal">конверсия в диалог</span></div>
+            <div class="text-xs text-slate-500 mt-1">Дозвоны (>10с): <b class="text-slate-800">${reachRate}%</b></div>
+          </div>
+          <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+            <div class="text-xs text-slate-500 font-semibold uppercase mb-1">Утилизация времени в линии</div>
+            <div class="text-xl font-bold text-slate-900">${utilization}% <span class="text-xs text-slate-500 font-normal">от смены</span></div>
+            <div class="text-xs text-slate-500 mt-1">Всего разговоров: <b class="text-slate-800 font-mono">${formatSec(data.totalTalkSec)}</b></div>
+          </div>
+          <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col justify-center">
+            <div class="text-xs text-slate-500 font-semibold uppercase mb-1">Статус аудита</div>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold border ${badgeColor} w-fit">
+              ${efficiencyBadge}
+            </span>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div class="p-4 bg-slate-50/70 border border-slate-200 rounded-xl">
+            <h4 class="font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600"></i> Сильные стороны и лидеры:
+            </h4>
+            <p class="text-slate-700 text-xs leading-relaxed">
+              Лидер по объёму звонков — <b>${topAgent.name}</b> (${topAgent.calls} звонков, ${topAgent.dialogs} диалогов, отработано ${formatSec(topAgent.totalWorkShiftSec)}).
+              ${data.totalFlyers > 0 ? `По раскидке охвачено <b>${data.housesCount}</b> домов и разнесено <b>${data.totalFlyers}</b> листовок.` : ''}
+              Всего собрано заявок: <b>${data.totalLeads}</b>.
+            </p>
+          </div>
+
+          <div class="p-4 bg-red-50/60 border border-red-100 rounded-xl">
+            <h4 class="font-bold text-red-900 mb-1 flex items-center gap-2">
+              <i data-lucide="alert-triangle" class="w-4 h-4 text-red-600"></i> Точки роста и просадки:
+            </h4>
+            <ul class="list-disc list-inside text-slate-700 text-xs space-y-1">
+              ${utilization < 10 ? `<li>Низкая утилизация рабочего времени (${utilization}%). Агенты проводят в разговорах мало времени относительно длительности смены.</li>` : '<li>Утилизация смен в пределах нормы.</li>'}
+              ${sortedAgents.length > 1 ? `<li>Минимальная активность зафиксирована у сотрудника <b>${lowAgent.name}</b> (${lowAgent.calls} звонков, ${lowAgent.dialogs} диалогов).</li>` : ''}
+              ${data.totalFlyers > 0 && data.totalLeads === 0 ? `<li>Большой объем раскидки (${data.totalFlyers} шт.), но заявок пока 0. Рекомендуется проверить качество расклейки по фотоотчётам FORapp.</li>` : ''}
+            </ul>
+          </div>
+
+          <div class="p-4 bg-slate-900 text-white rounded-xl">
+            <h4 class="font-bold text-red-400 mb-1 flex items-center gap-2 text-xs uppercase tracking-wider">
+              <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i> Рекомендации супервайзеру ТТК:
+            </h4>
+            <p class="text-slate-300 text-xs leading-relaxed">
+              1. Сократить паузы между наборами номеров для повышения утилизации линии до целевых 15-20%.<br>
+              2. Провести разбор диалогов длительностью 10–25 секунд для проработки возражений и преодоления первых барьеров клиента.<br>
+              3. Сопоставить адреса раскидки с поступающими заявками для оценки конверсии конкретных жилых массивов.
+            </p>
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    // Генератор глубокого управленческого ИИ-аудита
+    async function generateDeepAiAnalysis() {
+      const container = document.getElementById('aiAnalysisContainer');
+      if (!currentAggregatedData || currentAggregatedData.agents.length === 0) {
+        alert('Сначала загрузите данные или выберите период с активностью.');
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="p-8 text-center bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+          <div class="inline-block w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+          <div class="text-sm font-bold text-slate-800">ИИ формирует глубокий управленческий аудит смены...</div>
+          <div class="text-xs text-slate-500">Сверка таймингов, утилизации линий, охвата раскидки и конверсии заявок</div>
+        </div>
+      `;
+
+      const d = currentAggregatedData;
+      const reachPct = d.totalCalls ? Math.round((d.totalReaches / d.totalCalls) * 100) : 0;
+      const dialPct = d.totalCalls ? Math.round((d.totalDialogs / d.totalCalls) * 100) : 0;
+      const dialFromReach = d.totalReaches ? Math.round((d.totalDialogs / d.totalReaches) * 100) : 0;
+      const utilization = d.totalWorkSec ? Math.min(100, Math.round((d.totalTalkSec / d.totalWorkSec) * 100)) : 0;
+      const avgCallDur = d.totalCalls ? Math.round(d.totalTalkSec / d.totalCalls) : 0;
+
+      const sortedByCalls = [...d.agents].sort((a,b) => b.calls - a.calls);
+      const topAgent = sortedByCalls[0];
+      const lowAgent = sortedByCalls[sortedByCalls.length - 1];
+
+      setTimeout(() => {
+        container.innerHTML = `
+          <div class="p-6 bg-slate-900 text-slate-100 rounded-xl space-y-5 shadow-xl text-xs leading-relaxed border border-slate-800">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <span class="font-bold text-sm text-red-400 flex items-center gap-2">
+                <i data-lucide="sparkles" class="w-4 h-4 text-red-400"></i> Экспертный аудит эффективности смены ТТК (${d.period})
+              </span>
+              <button onclick="renderSmartAnalytics(currentAggregatedData)" class="text-xs text-slate-400 hover:text-white underline">Свернуть в краткий вид</button>
+            </div>
+
+            <div class="space-y-4">
+              <div>
+                <h4 class="text-sm font-bold text-white mb-1.5 flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 1. Главный вывод
+                </h4>
+                <p class="text-slate-300">
+                  За период зафиксировано <b>${d.totalCalls}</b> звонков и <b>${formatSec(d.totalTalkSec)}</b> чистого эфирного времени. Общая конверсия в диалоги (>20с) составляет <b>${dialPct}%</b> (${dialFromReach}% от поднявших трубку). 
+                  Утилизация рабочего времени операторов находится на уровне <b>${utilization}%</b>. ${d.totalLeads > 0 ? `Канал сгенерировал <b>${d.totalLeads}</b> заявок.` : 'За отчетный период новых заявок не зафиксировано — основной фокус смещен на холодный прогрев базы.'}
+                </p>
+              </div>
+
+              <div>
+                <h4 class="text-sm font-bold text-white mb-1.5 flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-blue-500"></span> 2. Анализ работы команды и утилизации смен
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
+                  <div class="bg-slate-800/80 p-3 rounded-lg border border-slate-700">
+                    <div class="text-slate-400 font-semibold mb-1">Лидер по интенсивности:</div>
+                    <div class="font-bold text-emerald-400 text-sm">${topAgent.name}</div>
+                    <div class="text-slate-300 mt-1">${topAgent.calls} звонков | ${topAgent.dialogs} диалогов | Разговор: ${formatSec(topAgent.talkSec)}</div>
+                  </div>
+                  <div class="bg-slate-800/80 p-3 rounded-lg border border-slate-700">
+                    <div class="text-slate-400 font-semibold mb-1">Зона риска / Просадка:</div>
+                    <div class="font-bold text-amber-400 text-sm">${lowAgent.name}</div>
+                    <div class="text-slate-300 mt-1">${lowAgent.calls} звонков | ${lowAgent.dialogs} диалогов | Разговор: ${formatSec(lowAgent.talkSec)}</div>
+                  </div>
+                </div>
+                <p class="text-slate-300">
+                  Средняя длительность одного контакта: <b>${avgCallDur} сек</b>. ${utilization < 10 ? 'Выявлены значительные простои между наборами номеров. Операторы тратят менее 10% оплачиваемой смены на активную речь.' : 'Темп набора номеров и утилизация смен соответствуют нормативным показателям ТТК.'}
+                </p>
+              </div>
+
+              ${d.totalFlyers > 0 ? `
+              <div>
+                <h4 class="text-sm font-bold text-white mb-1.5 flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-amber-500"></span> 3. Расклейка / Раскидка (FORapp)
+                </h4>
+                <p class="text-slate-300">
+                  Отработано <b>${d.housesCount}</b> жилых домов, суммарно распространено <b>${d.totalFlyers}</b> рекламных материалов. ${d.totalLeads > 0 ? `Связка раскидки и звонков дает отдачу в виде ${d.totalLeads} заявок.` : 'Рекомендуется выборочно сверить GPS-метки и фотоотчёты в журнале адресов для контроля добросовестности расклейки.'}
+                </p>
+              </div>` : ''}
+
+              <div class="bg-slate-950 p-4 rounded-xl border border-red-900/50">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-red-400 mb-2 flex items-center gap-2">
+                  <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i> 4. План действий супервайзеру на следующую смену:
+                </h4>
+                <ol class="list-decimal list-inside space-y-1.5 text-slate-300">
+                  <li><b>Сократить межнаборный интервал:</b> установить для операторов норматив не более 30-45 секунд между звонками для вывода утилизации на уровень 15%+.</li>
+                  <li><b>Прослушать короткие звонки (10–20 сек):</b> разобрать типичные возражения клиентов на этапе приветствия и скорректировать речевой модуль.</li>
+                  <li><b>Индивидуальный коучинг:</b> подключиться к звонкам сотрудника <b>${lowAgent.name}</b> для выявления причин отставания по темпу смены.</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+      }, 500);
+    }
+
+    function renderDashboard() {
+      const from = dateFromInput.value;
+      const to = dateToInput.value;
+
+      const dateDisplay = document.getElementById('kpiDatesDisplay');
+      if (dateDisplay) dateDisplay.innerText = `${from} — ${to}`;
+
+      const periodCalls = (db.calls || []).filter(c => (!from || c.date >= from) && (!to || c.date <= to));
+      const periodFlyers = (db.flyers || []).filter(f => (!from || f.date >= from) && (!to || f.date <= to));
+      const periodLeads = (db.leads || []).filter(l => (!from || l.date >= from) && (!to || l.date <= to));
+
+      const agentMap = {};
+
+      periodCalls.forEach(c => {
+        if (!agentMap[c.agent]) {
+          agentMap[c.agent] = { 
+            name: c.agent, 
+            calls: 0, 
+            reaches: 0, 
+            dialogs: 0, 
+            talkSec: 0, 
+            days: {}, 
+            flyers: 0, 
+            leads: 0 
+          };
+        }
+        const a = agentMap[c.agent];
+        a.calls++;
+        if (c.duration > 10) a.reaches++;
+        if (c.duration > 20) a.dialogs++;
+        a.talkSec += c.duration;
+
+        if (!a.days[c.date]) {
+          a.days[c.date] = { minTime: c.time, maxTime: c.time };
+        } else {
+          if (c.time < a.days[c.date].minTime) a.days[c.date].minTime = c.time;
+          if (c.time > a.days[c.date].maxTime) a.days[c.date].maxTime = c.time;
+        }
+      });
+
+      periodFlyers.forEach(f => {
+        if (!agentMap[f.agent]) {
+          agentMap[f.agent] = { name: f.agent, calls: 0, reaches: 0, dialogs: 0, talkSec: 0, days: {}, flyers: 0, leads: 0 };
+        }
+        agentMap[f.agent].flyers += f.count;
+      });
+
+      periodLeads.forEach(l => {
+        if (agentMap[l.agent]) agentMap[l.agent].leads++;
+      });
+
+      const agents = Object.values(agentMap).map(a => {
+        let totalWorkShiftSec = 0;
+        let dayCount = 0;
+        let singleDayDetails = '';
+
+        Object.keys(a.days || {}).forEach(dayKey => {
+          const d = a.days[dayKey];
+          if (d.minTime && d.maxTime) {
+            const shiftSec = Math.max(0, timeToSec(d.maxTime) - timeToSec(d.minTime));
+            totalWorkShiftSec += shiftSec;
+            dayCount++;
+            singleDayDetails = `${d.minTime} - ${d.maxTime}`;
+          }
+        });
+
+        return {
+          ...a,
+          totalWorkShiftSec,
+          dayCount,
+          singleDayDetails
+        };
+      });
+
+      const totalCalls = agents.reduce((s, a) => s + a.calls, 0);
+      const totalReaches = agents.reduce((s, a) => s + a.reaches, 0);
+      const totalDialogs = agents.reduce((s, a) => s + a.dialogs, 0);
+      const totalTalkSec = agents.reduce((s, a) => s + a.talkSec, 0);
+      const totalWorkSec = agents.reduce((s, a) => s + a.totalWorkShiftSec, 0);
+      const totalFlyers = agents.reduce((s, a) => s + a.flyers, 0);
+
+      const elAgents = document.getElementById('kpiAgents'); if (elAgents) elAgents.innerText = agents.length;
+      const elCalls = document.getElementById('kpiCalls'); if (elCalls) elCalls.innerText = totalCalls;
+      const elReaches = document.getElementById('kpiReaches'); if (elReaches) elReaches.innerText = totalReaches;
+      const elDialogs = document.getElementById('kpiDialogs'); if (elDialogs) elDialogs.innerText = totalDialogs;
+      const elTotalWork = document.getElementById('kpiTotalWork'); if (elTotalWork) elTotalWork.innerText = formatSec(totalWorkSec);
+      const elTotalTalk = document.getElementById('kpiTotalTalk'); if (elTotalTalk) elTotalTalk.innerText = formatSec(totalTalkSec);
+      const elFlyers = document.getElementById('kpiFlyers'); if (elFlyers) elFlyers.innerText = totalFlyers;
+      const elHouses = document.getElementById('kpiHouses'); if (elHouses) elHouses.innerText = periodFlyers.length;
+      const elLeads = document.getElementById('kpiLeads'); if (elLeads) elLeads.innerText = periodLeads.length;
+
+      const tbody = document.getElementById('agentsTableBody');
+      if (tbody) {
+        if (agents.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center py-10 text-slate-400">Нет данных за выбранный период</td></tr>';
+        } else {
+          let htmlRows = '';
+          agents.sort((a,b) => b.calls - a.calls).forEach(a => {
+            let workSpan = '—';
+            if (a.dayCount === 1) {
+              workSpan = '<div class="font-medium text-slate-700">' + a.singleDayDetails + '</div><div class="text-red-600 font-semibold text-xs">' + formatSec(a.totalWorkShiftSec) + '</div>';
+            } else if (a.dayCount > 1) {
+              workSpan = '<div class="font-bold text-red-600">' + formatSec(a.totalWorkShiftSec) + '</div><div class="text-slate-400 text-xs">за ' + a.dayCount + ' смен(ы)</div>';
+            }
+
+            const reachPct = a.calls ? Math.round((a.reaches / a.calls) * 100) : 0;
+            const dialPct = a.reaches ? Math.round((a.dialogs / a.reaches) * 100) : 0;
+            const leadBadgeClass = a.leads > 0 ? 'bg-red-50 text-red-700 border border-red-200 font-bold' : 'text-slate-400';
+
+            htmlRows += '<tr class="hover:bg-slate-50 transition">' +
+              '<td class="py-3 px-4 font-semibold text-slate-900">' + a.name + '</td>' +
+              '<td class="py-3 px-4 text-xs text-slate-600">' + workSpan + '</td>' +
+              '<td class="py-3 px-4 text-xs font-mono text-emerald-600 font-bold">' + formatSec(a.talkSec) + '</td>' +
+              '<td class="py-3 px-4 text-center font-bold text-slate-800">' + a.calls + '</td>' +
+              '<td class="py-3 px-4 text-center text-slate-700">' + a.reaches + ' <span class="text-xs text-slate-400">(' + reachPct + '%)</span></td>' +
+              '<td class="py-3 px-4 text-center text-emerald-600 font-bold">' + a.dialogs + ' <span class="text-xs text-slate-400 font-normal">(' + dialPct + '%)</span></td>' +
+              '<td class="py-3 px-4 text-center text-amber-600 font-bold">' + (a.flyers || '—') + '</td>' +
+              '<td class="py-3 px-4 text-center"><span class="px-2.5 py-0.5 rounded-full text-xs ' + leadBadgeClass + '">' + a.leads + '</span></td>' +
+            '</tr>';
+          });
+          tbody.innerHTML = htmlRows;
+        }
+      }
+
+      const fbody = document.getElementById('flyersTableBody');
+      if (fbody) {
+        if (periodFlyers.length === 0) {
+          fbody.innerHTML = '<tr><td colspan="7" class="text-center py-6 text-slate-400">Нет записей по раскидке</td></tr>';
+        } else {
+          let fRows = '';
+          periodFlyers.forEach(f => {
+            const photoBtn = f.photo ? '<a href="' + f.photo + '" target="_blank" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-md border border-emerald-200 font-medium">Фото</a>' : '—';
+            fRows += '<tr class="hover:bg-slate-50 transition">' +
+              '<td class="py-2.5 px-4 text-xs text-slate-500 font-medium">' + f.date + '</td>' +
+              '<td class="py-2.5 px-4 font-semibold text-slate-900">' + f.agent + '</td>' +
+              '<td class="py-2.5 px-4 text-slate-700 text-xs">' + f.address + '</td>' +
+              '<td class="py-2.5 px-4 text-center font-bold text-amber-600">' + f.count + '</td>' +
+              '<td class="py-2.5 px-4 text-xs text-slate-500">' + (f.time || '—') + '</td>' +
+              '<td class="py-2.5 px-4 text-xs text-slate-500">' + (f.dist || '—') + '</td>' +
+              '<td class="py-2.5 px-4 text-center">' + photoBtn + '</td>' +
+            '</tr>';
+          });
+          fbody.innerHTML = fRows;
+        }
+      }
+
+      const lbody = document.getElementById('leadsTableBody');
+      if (lbody) {
+        if (periodLeads.length === 0) {
+          lbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-slate-400">Нет заявок за этот период</td></tr>';
+        } else {
+          let lRows = '';
+          periodLeads.forEach(l => {
+            lRows += '<tr class="hover:bg-slate-50 transition">' +
+              '<td class="py-2.5 px-4 text-xs text-slate-500 font-medium">' + l.date + '</td>' +
+              '<td class="py-2.5 px-4 font-semibold text-slate-900">' + l.agent + '</td>' +
+              '<td class="py-2.5 px-4 text-xs"><span class="px-2.5 py-0.5 rounded bg-red-50 text-red-600 border border-red-200 font-semibold">' + l.channel + '</span></td>' +
+              '<td class="py-2.5 px-4 font-mono text-xs text-slate-700 font-medium">' + (l.phone || '—') + '</td>' +
+              '<td class="py-2.5 px-4 text-xs text-slate-600">' + (l.address || '—') + '</td>' +
+            '</tr>';
+          });
+          lbody.innerHTML = lRows;
+        }
+      }
+
+      updateCharts(periodCalls, periodFlyers, periodLeads);
+
+      currentAggregatedData = {
+        period: `${from} — ${to}`,
+        totalCalls,
+        totalReaches,
+        totalDialogs,
+        totalTalkSec,
+        totalWorkSec,
+        totalFlyers,
+        housesCount: periodFlyers.length,
+        totalLeads: periodLeads.length,
+        agents
+      };
+      renderSmartAnalytics(currentAggregatedData);
+
+      lucide.createIcons();
+    }
+
+    fetchCloudData();
+  </script>
+</body>
+</html>
